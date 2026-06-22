@@ -1050,8 +1050,32 @@ class ContentBridge360 {
 
         check_admin_referer('content_bridge_360_import_nonce');
 
+        // Modificiation principale ici : Gestion des erreurs d'upload PHP
+        if (!isset($_FILES['import_file'])) {
+            $this->setNotice($this->tr('No import file received by the server. Check your PHP limits (post_max_size).', 'Aucun fichier recu par le serveur. Verifie les limites de ton serveur PHP (post_max_size).'), 'error');
+            $this->redirectToPage();
+        }
+
+        $uploadError = (int) $_FILES['import_file']['error'];
+        
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            if ($uploadError === UPLOAD_ERR_INI_SIZE || $uploadError === UPLOAD_ERR_FORM_SIZE) {
+                $errorMessage = $this->tr(
+                    'The uploaded file exceeds the upload_max_filesize directive in php.ini.', 
+                    'Le fichier JSON depasse la limite de poids autorisee par ton serveur (upload_max_filesize). Compresse-le ou augmente cette limite sur ton hébergement.'
+                );
+            } elseif ($uploadError === UPLOAD_ERR_NO_FILE) {
+                $errorMessage = $this->tr('No import file uploaded.', 'Aucun fichier n a ete selectionne pour l import.');
+            } else {
+                $errorMessage = $this->tr('Upload error code: ', 'Erreur de televersement, code : ') . $uploadError;
+            }
+            
+            $this->setNotice($errorMessage, 'error');
+            $this->redirectToPage();
+        }
+
         if (empty($_FILES['import_file']['tmp_name'])) {
-            $this->setNotice($this->tr('No import file uploaded.', 'Aucun fichier importe.'), 'error');
+            $this->setNotice($this->tr('Unable to read the uploaded file (tmp_name is empty).', 'Impossible de lire le fichier televerse (tmp_name est vide).'), 'error');
             $this->redirectToPage();
         }
 
