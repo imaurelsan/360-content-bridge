@@ -1086,19 +1086,16 @@ class ContentBridge360 {
         }
 
         $payload = json_decode($raw, true);
-        if (!is_array($payload) || empty($payload['items']) || !is_array($payload['items'])) {
-            $this->setNotice($this->tr('Invalid JSON structure.', 'Structure JSON invalide.'), 'error');
+        
+        // Ajout de la gestion d'erreur détaillée pour le JSON
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->setNotice($this->tr('JSON error: ', 'Erreur JSON : ') . json_last_error_msg(), 'error');
             $this->redirectToPage();
         }
 
-        $sourceSiteUrl = '';
-        if (!empty($payload['meta']['site_url']) && is_string($payload['meta']['site_url'])) {
-            $sourceSiteUrl = untrailingslashit($payload['meta']['site_url']);
-        }
-
-        $options = $this->readImportOptions();
-        if ($options['mapping_error']) {
-            $this->setNotice($this->tr('Mapping JSON is invalid.', 'Le JSON de mapping est invalide.'), 'error');
+        // Utilisation de !isset() au lieu de empty() pour autoriser un export vide
+        if (!is_array($payload) || !isset($payload['items']) || !is_array($payload['items'])) {
+            $this->setNotice($this->tr('Invalid JSON structure.', 'Structure JSON invalide.'), 'error');
             $this->redirectToPage();
         }
 
@@ -2078,7 +2075,15 @@ class ContentBridge360 {
 
         $raw = file_get_contents($assocArgs['input']);
         $payload = json_decode($raw, true);
-        if (!is_array($payload) || empty($payload['items']) || !is_array($payload['items'])) {
+        
+        // Ajout de la gestion d'erreur détaillée pour le JSON
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->cliNotify('error', 'JSON decoding error: ' . json_last_error_msg());
+            return;
+        }
+
+        // Utilisation de !isset() au lieu de empty()
+        if (!is_array($payload) || !isset($payload['items']) || !is_array($payload['items'])) {
             $this->cliNotify('error', 'Invalid JSON structure');
             return;
         }
